@@ -1,0 +1,4 @@
+item_code,converted_to_item_code,routing_note,process_code,process_description
+ABC001-R,ABC001,internal process,A,Casting
+ABC001-R,ABC001,internal process,B,Forging
+ABC001-R,ABC001,internal process,C,Finishing

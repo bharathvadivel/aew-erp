@@ -1,0 +1,927 @@
+<?php
+
+use App\Exports\PriceExport;
+
+use App\Exports\WarserialExport;
+
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\LoginController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\UnitController;
+use App\Http\Controllers\ModelController;
+use App\Http\Controllers\ItemController;
+use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\SalesController;
+
+use App\Http\Controllers\WarrantyLogics;
+use App\Http\Controllers\LocationController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\DistributorController;
+use App\Http\Controllers\GategoryController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\DealorController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\ExecutiveController;
+use App\Http\Controllers\PromoterController;
+use App\Http\Controllers\PricemasterController;
+use App\Http\Controllers\AsmController;
+use App\Http\Controllers\BajajController;
+use App\Http\Controllers\RegionalController;
+use App\Http\Controllers\SalesExecutiveController;
+use App\Http\Controllers\DisinvoiceController;
+use App\Http\Controllers\SCPInvoiceController;
+use App\Http\Controllers\WarehouseinvoiceController;
+use App\Http\Controllers\DistributorinvoiceController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EnquiryController;
+use App\Http\Controllers\MarketingController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\DeainvoiceController;
+use App\Http\Controllers\DealersalereturnController;
+use App\Http\Controllers\SalereturnController;
+use App\Http\Controllers\SparepartsController;
+use App\Http\Controllers\ApiamountcollectController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\StateCodeController;
+
+use Maatwebsite\Excel\Facades\Excel;
+
+use App\Models\Disinvoice;
+use Illuminate\Support\Facades\Response;
+
+use App\Imports\User;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
+|
+*/
+
+Route::get('/', [LoginController::class, 'index'])->name('/');
+Route::get('/register', [LoginController::class, 'register']);
+Route::get('/dashboard', [DashboardController::class, 'sample']);
+Route::post('/user_login', [LoginController::class, 'login']);
+Route::post('/login_by_admin', [LoginController::class, 'login_by_admin'])->name('login.by.admin');
+Route::post('/sent_otp', [LoginController::class, 'sent_otp'])->name('sent.otp');
+Route::post('/resent_otp', [LoginController::class, 'resent_otp'])->name('resent.otp');
+Route::post('/verify_otp', [LoginController::class, 'verify_otp'])->name('verify.otp');
+
+Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
+
+//////////////////////////////////// Admins ////////////////////////////////////
+Route::controller(AdminController::class)->group(function () {
+    Route::get('/manage_admins', 'manage_admins')->name('manage.admins')->middleware('admin_check');
+    Route::get('/manage_settings', 'manage_settings')->name('manage.settings')->middleware('admin_check');
+    Route::post('/update_admins', 'update_admins')->name('update.admins')->middleware('admin_check');
+    Route::post('/update_settings', 'update_settings')->name('update.settings')->middleware('admin_check');
+    Route::get('/clear_cache', 'clear_cache')->name('clear_cache');
+});
+
+//////////////////////////////////// Dashboard ////////////////////////////////////
+Route::controller(DashboardController::class)->group(function () {
+    Route::get('admin_dashboard', 'index')->name('admin.dashboard')->middleware('admin_check');
+    Route::post('admin_dashboard', 'index_filter')->name('admin.dashboard');
+    Route::get('accounts_dashboard', 'index')->name('accounts.dashboard')->middleware('admin_accounts_check');
+
+    Route::post('accounts_dashboard', 'index_filter')->name('accounts.dashboard');
+
+    Route::get('warehouse_dashboard', 'warehouse')->name('warehouse.dashboard')->middleware('admin_warehouse_check');
+    Route::post('warehouse_dashboard', 'warehouse_filter')->name('warehouse.dashboard')->middleware('admin_warehouse_check');
+
+    Route::get('asm_dashboard', 'asm')->name('asm.dashboard');
+    Route::post('asm_dashboard', 'asm_filter')->name('asm.dashboard');
+
+    Route::get('regional_dashboard', 'regional')->name('regional.dashboard');
+    Route::post('regional_dashboard', 'regional_filter')->name('regional.dashboard');
+
+    Route::get('distributor_dashboard', 'distributor')->name('distributor.dashboard')->middleware('admin_distributor_check');
+    Route::post('distributor_dashboard', 'distributor_filter')->name('distributor.dashboard')->middleware('admin_distributor_check');
+
+    Route::get('direct_dealer_dashboard', 'direct_dealer')->name('direct.dealer.dashboard')->middleware('admin_directdealer_check');
+    Route::post('direct_dealer_dashboard', 'direct_dealer_filter')->name('direct.dealer.dashboard')->middleware('admin_directdealer_check');
+
+    Route::get('dealer_dashboard', 'dealer')->name('dealer.dashboard')->middleware('admin_subdealer_check');
+    Route::post('dealer_dashboard', 'dealer_filter')->name('dealer.dashboard')->middleware('admin_subdealer_check');
+
+    Route::get('factory_dashboard', 'factory')->name('factory.dashboard')->middleware('admin_factory_check');
+    Route::post('factory_dashboard', 'factory_filter')->name('factory.dashboard')->middleware('admin_factory_check');
+
+    Route::get('hr_dashboard', 'hr')->name('hr.dashboard')->middleware('admin_hr_check');
+    Route::post('hr_dashboard', 'hr_filter')->name('hr.dashboard')->middleware('admin_hr_check');
+});
+
+//////////////////////////////////// Units ////////////////////////////////////
+Route::controller(UnitController::class)->group(function () {
+    Route::get('/unit_master', 'unit_master')->name('unit.master');
+    Route::get('/add_unit', 'index')->name('add.unit');
+    Route::post('/unit_store', 'unit_store')->name('unit.store');
+    Route::get('/unit_edit/{id}', 'unit_edit')->name('unit.edit')->middleware('admin_check');
+    Route::post('/unit_update', 'unit_update')->name('unit.update');
+    Route::get('/unit_delete/{id}', 'unit_delete')->middleware('admin_check');
+});
+
+//////////////////////////////////// Models ////////////////////////////////////
+Route::controller(ModelController::class)->group(function () {
+    Route::get('/model_master', 'model_master')->name('model.master');
+    Route::get('/add_model', 'index')->name('add.model');
+    Route::post('/model_store', 'model_store')->name('model.store');
+    Route::get('/model_edit/{id}', 'model_edit')->name('model.edit')->middleware('admin_check');
+    Route::post('/model_update', 'model_update')->name('model.update');
+    Route::get('/model_delete/{id}', 'model_delete')->middleware('admin_check');
+});
+
+//////////////////////////////////// Items ////////////////////////////////////
+Route::controller(ItemController::class)->group(function () {
+    Route::get('/item_type_master', 'item_type_master')->name('item.type.master');
+    Route::get('/add_item_type', 'add_item_type')->name('add.item.type');
+    Route::post('/item_type_store', 'item_type_store')->name('item.type.store');
+    Route::get('/item_type_edit/{id}', 'item_type_edit')->name('item.type.edit')->middleware('admin_check');
+    Route::post('/item_type_update', 'item_type_update')->name('item.type.update');
+    Route::get('/item_type_delete/{id}', 'item_type_delete')->middleware('admin_check');
+
+    Route::get('/item_group_master', 'item_group_master')->name('item.group.master');
+    Route::get('/add_item_group', 'add_item_group')->name('add.item.group');
+    Route::post('/item_group_store', 'item_group_store')->name('item.group.store');
+    Route::get('/item_group_edit/{id}', 'item_group_edit')->name('item.group.edit')->middleware('admin_check');
+    Route::post('/item_group_update', 'item_group_update')->name('item.group.update');
+    Route::get('/item_group_delete/{id}', 'item_group_delete')->middleware('admin_check');
+});
+
+//////////////////////////////////// Material ////////////////////////////////////
+Route::controller(MaterialController::class)->group(function () {
+    Route::get('/material_master', 'material_master')->name('material.master');
+    Route::get('/add_material', 'index')->name('add.material');
+    Route::post('/import_materials', 'import_materials')->name('add.material.list');
+    Route::get('/import_materials_list', 'import_materials_list')->name('material.list.import');
+    
+    Route::post('/material_store', 'material_store')->name('material.store');
+    Route::get('/material_edit/{id}', 'material_edit')->name('material.edit')->middleware('admin_check');
+    Route::post('/material_update', 'material_update')->name('material.update');
+    Route::get('/material_delete/{id}', 'material_delete')->middleware('admin_check');
+    Route::post('/gen_material_code', 'gen_material_code')->name('gen.material.code')->middleware('admin_check');
+});
+
+//////////////////////////////////// Product ////////////////////////////////////
+Route::controller(ProductController::class)->group(function () {
+    Route::get('/product', 'index')->name('product.master')->middleware('admin_check');
+});
+
+//////////////////////////////////// Sales ////////////////////////////////////
+Route::controller(SalesController::class)->group(function () {
+    Route::get('/invoice_master', 'invoice_master')->name('invoice.master');
+    Route::post('/invoice_master', 'invoice_master_filter')->name('invoice.master');
+    Route::get('/add_invoice', 'index')->name('add.invoice');
+    Route::post('/itemcode_select', 'itemcode_select')->name('itemcode.select');
+    Route::post('/product_select', 'product_select')->name('product.select');
+    
+
+    Route::post('/unit_store', 'unit_store')->name('unit.store');
+    Route::get('/unit_edit/{id}', 'unit_edit')->name('unit.edit')->middleware('admin_check');
+    Route::post('/unit_update', 'unit_update')->name('unit.update');
+    Route::get('/unit_delete/{id}', 'unit_delete')->middleware('admin_check');
+
+    // Route::get('/disinvoice', 'index')->name('disinvoice')->middleware('admin_warehouse_check');
+    // Route::post('/partner-details', 'partner_details')->name('partner.details');
+    // Route::post('/dis_select', 'dis_select')->name('dis_select');
+
+    // Route::post('/invoiceno', 'invoiceno')->name('invoiceno');
+
+    // Route::post('/dis_select_edit', 'dis_select_edit')->name('dis_select_edit');
+    // Route::post('/address_select', 'address_select')->name('address_select');
+
+    // Route::post('/model_select', 'model_select')->name('model.select');
+
+    // Route::post('/product_select', 'product_select')->name('product_select');
+    // Route::post('/dis_model_details', 'dis_model_details')->name('dis.model.details');
+
+    // Route::get('/disinvoice_print/{disinvoice_no}', 'disinvoice_print')->name('disinvoice.print')->middleware('admin_warehouse_check');
+
+    // Route::post('/disinvoice_remove', 'disinvoice_remove')->name('disinvoice.remove')->middleware('admin_warehouse_check');
+    // Route::post('/disinvoice_store', 'disinvoice_store')->name('disinvoice.store')->middleware('admin_warehouse_check');
+    // Route::post('/disinvoice_csv_store', 'disinvoice_csv_store')->name('disinvoice.csv.store')->middleware('admin_warehouse_check');
+    // Route::post('/disinvoice_csv_store_update', 'disinvoice_csv_store_update')->name('disinvoice.csv.store.update')->middleware('admin_warehouse_check');
+
+
+    // Route::get('/disinvoice_master', 'disinvoice_master')->name('disinvoice.master')->middleware('admin_waracc_check');
+    // Route::post('/disinvoice_master', 'disinvoice_master_filter')->name('disinvoice.master')->middleware('admin_waracc_check');
+
+    // Route::get('/disinvoice_edit/{id}', 'disinvoice_edit')->name('disinvoice.edit')->middleware('admin_warehouse_check');
+    // Route::post('/disinvoice_update', 'disinvoice_update')->name('disinvoice.update')->middleware('admin_warehouse_check');
+    // Route::delete('/disinvoice_delete/{disinvoice_no}', 'disinvoice_delete')->name('disinvoice.delete')->middleware('admin_warehouse_check');
+
+    // Route::get('/generatepdf/{disinvoice_no}', 'generatePDF')->name('disinvoice.generatepdf')->middleware('admin_waracc_check');
+
+    // Route::post('/disinvoice_order', 'disinvoice_order')->name('disinvoice.order')->middleware('admin_warehouse_check');
+    // Route::get('/json_download/{disinvoice_no}', 'json_download')->name('disinvoice.json')->middleware('admin_warehouse_check');
+});
+
+////////////////////////////////////Location/////////////////////
+Route::get('/add_state', [LocationController::class, 'index'])->middleware('admin_check');
+Route::get('/add_city', [LocationController::class, 'city'])->name('add_city')->middleware('admin_check');
+Route::post('/state_store', [LocationController::class, 'state_store'])->middleware('admin_check');
+Route::post('/city_store', [LocationController::class, 'city_store'])->name('citystore');
+Route::get('/city_master', [LocationController::class, 'city_master'])->middleware('admin_check');
+Route::get('/city_delete/{id}', [LocationController::class, 'city_delete'])->middleware('admin_check');
+Route::get('/state_master', [LocationController::class, 'state_master'])->name('state.master')->middleware('admin_check');
+Route::get('/state_delete/{id}', [LocationController::class, 'state_delete'])->middleware('admin_check');
+Route::get('/state_edit/{id}', [LocationController::class, 'state_edit'])->middleware('admin_check');
+Route::get('/city_edit/{id}', [LocationController::class, 'city_edit'])->middleware('admin_check');
+Route::post('/state_update', [LocationController::class, 'state_update'])->middleware('admin_check');
+Route::post('/city_update', [LocationController::class, 'city_update'])->name('cityupdate');
+
+Route::post('/location_select', [LocationController::class, 'location_select'])->name('location_select');
+Route::get('/export-location', [LocationController::class,'exportState'])->name('export-location');
+
+
+////////////////////////////////Catalog/////////////////////////////////////
+Route::resource('brand', BrandController::class)->middleware('admin_check');
+
+////////////////////////////////////Gategory//////////////////////////////////
+Route::controller(GategoryController::class)->middleware('admin_check')->group(
+    function () {
+        Route::get('/gategory', 'index');
+        Route::post('/gategory', 'gategory_store')->name('gategory_store');
+        Route::get('/gategory_master', 'gategory_master')->name('gategory_master');
+        Route::get('/gategory_delete/{id}', 'gategory_delete');
+        Route::get('/gategory_edit/{id}', 'gategory_edit');
+        Route::post('/gategory_update', 'gategory_update')->name('gategory_update');
+    }
+);
+
+//////////////////////////////////////Warehouse////////////////////////////////////
+
+Route::controller(WarehouseController::class)->group(function () {
+    Route::get('/warehouse', 'index')->name('warehouse')->middleware('admin_check');
+    ;
+    Route::post('/warehouse_store', 'warehouse_store')->name('warehouse.store');
+    Route::get('/warehouse_master', 'warehouse_master')->name('warehouse.master')->middleware('admin_check');
+    ;
+    Route::get('/warehouse_edit/{id}', 'warehouse_edit')->name('warehouse.edit')->middleware('admin_check');
+    ;
+    Route::post('/warehouse_update', 'warehouse_update')->name('warehouse.update');
+    Route::delete('/warehouse_delete/{id}', 'warehouse_delete')->name('warehouse.delete');
+});
+
+////////////////////////////////////////Distributor//////////////////////////////////
+
+Route::controller(DistributorController::class)->group(function () {
+    Route::get('distributor', 'index')->name('distributor')->middleware('admin_check');
+    Route::post('/distributor_location', 'distributor_location')->name('distributor.location');
+
+    Route::post('/distributor_remove', 'distributor_remove')->name('distributor.remove');
+    Route::post('/distributor_location_remove', 'distributor_location_remove')->name('distributor_location.remove');
+
+
+    Route::post('/distributor_store', 'distributor_store')->name('distributor.store');
+    Route::get('/distributor_master', 'distributor_master')->name('distributor.master')->middleware('admin_accounts_check');
+    Route::get('/distributor_edit/{id}', 'distributor_edit')->name('distributor.edit')->middleware('admin_check');
+    Route::post('/distributor_update/{id}', 'distributor_update')->name('distributor.update');
+    Route::delete('/distributor_delete/{id}', 'distributor_delete')->name('distributor.delete');
+
+    Route::post('/distributor_location_edit', 'distributor_location_edit')->name('distributor.location.edit');
+
+    Route::post('/partner_ids', 'partner_ids')->name('partner.ids');
+});
+
+////////////////////////////////////////Dealor/////////////////////////////////////////////
+
+Route::controller(DealorController::class)->group(function () {
+    Route::get('dealor', 'index')->name('dealor')->middleware('admin_distributor_check');
+    Route::post('/dealor_store', 'dealor_store')->name('dealor.store');
+    Route::get('/dealor_master', 'dealor_master')->name('dealor.master')->middleware('admin_disacc_check');
+    Route::get('/dealor_edit/{id}', 'dealor_edit')->name('dealor.edit')->middleware('admin_distributor_check');
+    Route::post('/dealor_update/{id}', 'dealor_update')->name('dealor.update');
+    Route::delete('/dealor_delete/{id}', 'dealor_delete')->name('dealor.delete');
+});
+
+/////////////////////////////////////////Customer/////////////////////////////////////////////
+
+Route::controller(CustomerController::class)->group(function () {
+    Route::get('customer', 'index')->name('customer');
+    Route::post('/customer_store', 'customer_store')->name('customer.store');
+    Route::get('/customer_master', 'customer_master')->name('customer.master')->middleware('admin_check');
+    Route::get('/customer_edit/{id}', 'customer_edit')->name('customer.edit')->middleware('admin_check');
+    Route::post('/customer_update/{id}', 'customer_update')->name('customer.update');
+    Route::delete('/customer_delete/{id}', 'customer_delete')->name('customer.delete');
+});
+
+////////////////////////////////////////////// Service Center ////////////////////////////////////
+
+Route::controller(ServiceController::class)->group(function () {
+    Route::get('add_service', 'index')->name('add.service')->middleware('admin_serviceadmin_check');
+    Route::post('/service_store', 'service_store')->name('service.store');
+    Route::get('/service_master', 'service_master')->name('service.master')->middleware('admin_saacc_check');
+    Route::get('/service_edit/{id}', 'service_edit')->name('service.edit')->middleware('admin_serviceadmin_check');
+    Route::post('/service_update/{id}', 'service_update')->name('service.update');
+    Route::delete('/service_delete/{id}', 'service_delete')->name('service.delete');
+
+    Route::get('service_center_serials_stock', 'service_center_serials_stock')->name('service.center.serials.stock');
+    Route::post('/scp_stock_search', 'scp_stock_search')->name('scp.stock.search');
+
+    // SCP Stock Operations //
+    Route::post('/scp_serial_goods_status_update', 'scp_serial_goods_status_update')->name('scp.serial.goods.status.update');
+    Route::post('/scp_serial_consume_status_update', 'scp_serial_consume_status_update')->name('scp.serial.consume.status.update');
+
+    // SCP Create Return Order FORM Operations //
+    Route::post('/gen_scp_return_order_no', 'gen_scp_return_order_no')->name('gen.scp.return.order.no');
+    Route::post('/get_scp_ro_factory_type', 'get_scp_ro_factory_type')->name('get.scp.ro.factory.type');
+    Route::post('/get_to_address_details', 'get_to_address_details')->name('get.to.address.details');
+    Route::post('/scp_select_serial_no', 'scp_select_serial_no')->name('scp.select.serial.no');
+
+    // SCP Create and List - Return Orders Route //
+    Route::get('/scp_create_return_order', 'scp_create_return_order')->name('scp.create.return.order');
+    Route::get('/scp_return_stock_master', 'scp_return_stock_master')->name('scp.return.stock.master');
+
+    // SCP Return Order Operations //
+    Route::post('/scp_create_return_order_store', 'scp_create_return_order_store')->name('scp.create.return.order.store');
+    Route::delete('/scp_return_order_delete/{id}', 'scp_return_order_delete')->name('scp.return.order.delete');
+    Route::get('/scp_return_order_edit/{id}', 'scp_return_order_edit')->name('scp.return.order.edit');
+    Route::post('/scp_ro_single_serial_no_delete', 'scp_ro_single_serial_no_delete')->name('scp.ro.single.serial.no.delete');
+    Route::post('/scp_return_order_update', 'scp_return_order_update')->name('scprreturn.order.update');
+    Route::post('/scp_return_order_remove', 'scp_return_order_remove')->name('scp.return.order.remove');
+    
+    Route::post('/scp_return_order_csv_store', 'scp_return_order_csv_store')->name('scp.create.return.order.csv.store');
+    Route::post('/scp_return_order_csv_update', 'scp_return_order_csv_update')->name('scp.return.order.csv.update');
+    
+    Route::get('/scp_return_order_pdf/{scp_return_order_no}', 'scp_return_order_pdf');
+    Route::post('/scp_return_order_approve{scp_return_order_no}', 'scp_return_order_approve')->name('scp.return.order.approve');
+
+    Route::post('/scp_product_select_description', 'scp_product_select_description')->name('scp.product.select.description');
+});
+
+/////////////////////////////////////////////////Executive//////////////////////////////////////
+
+Route::controller(ExecutiveController::class)->group(function () {
+    Route::get('executive', 'index')->name('executive')->middleware('admin_servicecenter_check');
+    ;
+    Route::get('executive_service_center', 'executive_service_center')->name('executive.service.center')->middleware('admin_servicecenter_check');
+
+    Route::post('/executive_store', 'executive_store')->name('executive.store');
+    Route::get('/executive_master', 'executive_master')->name('executive.master')->middleware('admin_scacc_check');
+    Route::get('/executive_edit/{id}', 'executive_edit')->name('executive.edit')->middleware('admin_servicecenter_check');
+    ;
+    Route::post('/executive_update/{id}', 'executive_update')->name('executive.update');
+    Route::delete('/executive_delete/{id}', 'executive_delete')->name('executive.delete');
+    Route::post('/executive_id', 'executive_id')->name('executive.id');
+});
+
+//////////////////////////////////////Promoter//////////////////////////////////////////////
+
+Route::controller(PromoterController::class)->group(function () {
+    Route::get('promoter', 'index')->name('promoter')->middleware('admin_check');
+    Route::post('/promoter_store', 'promoter_store')->name('promoter.store');
+    Route::get('/promoter_master', 'promoter_master')->name('promoter.master')->middleware('admin_hracc_check');
+    Route::get('/promoter_edit/{id}', 'promoter_edit')->name('promoter.edit')->middleware('admin_check');
+    Route::post('/promoter_update/{id}', 'promoter_update')->name('promoter.update');
+    Route::delete('/promoter_delete/{id}', 'promoter_delete')->name('promoter.delete');
+});
+
+//////////////////////////////////////////PriceMaster//////////////////////////////////////////
+
+Route::controller(PriceMasterController::class)->group(function () {
+    Route::get('price', 'index')->name('price')->middleware('admin_check');
+    Route::get('add_price', 'add_price')->name('add.price');
+    Route::post('/price_store', 'price_store')->name('price.store');
+    Route::get('/price_search', 'price_search')->name('price.search');
+    Route::post('/price_insert', 'price_insert')->name('price.insert');
+    Route::get('/price_master', 'price_master')->name('price.master')->middleware('admin_check');
+    Route::get('/price_edit/{id}', 'price_edit')->name('price.edit')->middleware('admin_check');
+    Route::post('/price_update/{id}', 'price_update')->name('price.update');
+    Route::delete('/price_delete/{id}', 'price_delete')->name('price.delete');
+
+    Route::get('/price_export', 'export')->name('price.export');
+});
+
+///////////////////////////////////////////////ASM//////////////////////////////////////////////
+
+Route::controller(AsmController::class)->group(function () {
+    Route::get('asm', 'index')->name('asm')->middleware('admin_check');
+    Route::post('/asm_store', 'asm_store')->name('asm.store');
+    Route::get('/asm_master', 'asm_master')->name('asm.master')->middleware('admin_hracc_check');
+    Route::get('/asm_edit/{id}', 'asm_edit')->name('asm.edit')->middleware('admin_check');
+    Route::post('/asm_update/{id}', 'asm_update')->name('asm.update');
+    Route::delete('/asm_delete/{id}', 'asm_delete')->name('asm.delete');
+});
+
+//////////////////////////////////////////regional/////////////////////////////////////////////////
+
+Route::controller(RegionalController::class)->group(function () {
+    Route::get('regional', 'index')->name('regional')->middleware('admin_check');
+    Route::post('/regional_store', 'regional_store')->name('regional.store');
+    Route::get('/regional_master', 'regional_master')->name('regional.master')->middleware('admin_hracc_check');
+    Route::get('/regional_edit/{id}', 'regional_edit')->name('regional.edit')->middleware('admin_check');
+    Route::post('/regional_update/{id}', 'regional_update')->name('regional.update');
+    Route::delete('/regional_delete/{id}', 'regional_delete')->name('regional.delete');
+});
+
+
+///////////////////////////////////////sales executive/////////////////////////////////////////////
+
+Route::controller(SalesExecutiveController::class)->group(function () {
+    Route::get('sales_executive', 'index')->name('sales_executive');
+    Route::post('/sales_executive_store', 'sales_executive_store')->name('sales_executive.store');
+    Route::get('/sales_executive_master', 'sales_executive_master')->name('sales_executive.master');
+    Route::get('/sales_executive_edit/{id}', 'sales_executive_edit')->name('sales_executive.edit');
+    Route::post('/sales_executive_update/{id}', 'sales_executive_update')->name('sales_executive.update');
+    Route::delete('/sales_executive_delete/{id}', 'sales_executive_delete')->name('sales_executive.delete');
+});
+
+/////////////////////////////////////// direct partner invoice /////////////////////////////////////////////////////////
+
+Route::controller(DisinvoiceController::class)->group(function () {
+    Route::get('/disinvoice', 'index')->name('disinvoice')->middleware('admin_warehouse_check');
+    Route::post('/partner-details', 'partner_details')->name('partner.details');
+    Route::post('/dis_select', 'dis_select')->name('dis_select');
+
+    Route::post('/invoiceno', 'invoiceno')->name('invoiceno');
+
+    Route::post('/dis_select_edit', 'dis_select_edit')->name('dis_select_edit');
+    Route::post('/address_select', 'address_select')->name('address_select');
+
+    Route::post('/model_select', 'model_select')->name('model.select');
+
+    Route::post('/product_select', 'product_select')->name('product_select');
+    Route::post('/dis_model_details', 'dis_model_details')->name('dis.model.details');
+
+    Route::get('/disinvoice_print/{disinvoice_no}', 'disinvoice_print')->name('disinvoice.print')->middleware('admin_warehouse_check');
+
+    Route::post('/disinvoice_remove', 'disinvoice_remove')->name('disinvoice.remove')->middleware('admin_warehouse_check');
+    Route::post('/disinvoice_store', 'disinvoice_store')->name('disinvoice.store')->middleware('admin_warehouse_check');
+    Route::post('/disinvoice_csv_store', 'disinvoice_csv_store')->name('disinvoice.csv.store')->middleware('admin_warehouse_check');
+    Route::post('/disinvoice_csv_store_update', 'disinvoice_csv_store_update')->name('disinvoice.csv.store.update')->middleware('admin_warehouse_check');
+
+
+    Route::get('/disinvoice_master', 'disinvoice_master')->name('disinvoice.master')->middleware('admin_waracc_check');
+    Route::post('/disinvoice_master', 'disinvoice_master_filter')->name('disinvoice.master')->middleware('admin_waracc_check');
+
+    Route::get('/disinvoice_edit/{id}', 'disinvoice_edit')->name('disinvoice.edit')->middleware('admin_warehouse_check');
+    Route::post('/disinvoice_update', 'disinvoice_update')->name('disinvoice.update')->middleware('admin_warehouse_check');
+    Route::delete('/disinvoice_delete/{disinvoice_no}', 'disinvoice_delete')->name('disinvoice.delete')->middleware('admin_warehouse_check');
+
+    Route::get('/generatepdf/{disinvoice_no}', 'generatePDF')->name('disinvoice.generatepdf')->middleware('admin_waracc_check');
+
+    Route::post('/disinvoice_order', 'disinvoice_order')->name('disinvoice.order')->middleware('admin_warehouse_check');
+    Route::get('/json_download/{disinvoice_no}', 'json_download')->name('disinvoice.json')->middleware('admin_warehouse_check');
+});
+
+/////////////////////////////////////// service center partner invoice /////////////////////////////////////////////////////////
+
+Route::controller(SCPInvoiceController::class)->group(function () {
+    Route::get('/scpinvoice', 'index')->name('scpinvoice')->middleware('admin_warehouse_check');
+    Route::get('/warehouse_scpinvoice', 'index')->name('warehouse.scpinvoice')->middleware('admin_warehouse_check');
+
+    Route::post('/service-partner-details', 'service_partner_details')->name('service.partner.details');
+    Route::post('/scp_select', 'scp_select')->name('scp_select');
+
+    Route::post('/scpinvoiceno', 'scpinvoiceno')->name('scpinvoiceno');
+
+    Route::post('/scp_select_edit', 'scp_select_edit')->name('scp_select_edit');
+    Route::post('/address_select', 'address_select')->name('address_select');
+
+    Route::post('/scp_model_select', 'scp_model_select')->name('scp.model.select');
+
+    Route::post('/product_select', 'product_select')->name('product_select');
+    Route::post('/scp_model_details', 'scp_model_details')->name('scp.model.details');
+
+    Route::get('/scpinvoice_print/{scpinvoice_no}', 'scpinvoice_print')->name('scpinvoice.print')->middleware('admin_warehouse_check');
+
+    Route::post('/scpinvoice_remove', 'scpinvoice_remove')->name('scpinvoice.remove')->middleware('admin_warehouse_check');
+    Route::post('/scpinvoice_store', 'scpinvoice_store')->name('scpinvoice.store')->middleware('admin_warehouse_check');
+
+    Route::post('/scpinvoice_partorder_store', 'scpinvoice_partorder_store')->name('scpinvoice.partorder.store')->middleware('admin_warehouse_check');
+
+    Route::post('/scpinvoice_csv_store', 'scpinvoice_csv_store')->name('scpinvoice.csv.store')->middleware('admin_warehouse_check');
+    Route::post('/scpinvoice_csv_store_update', 'scpinvoice_csv_store_update')->name('scpinvoice.csv.store.update')->middleware('admin_warehouse_check');
+
+    Route::get('/scpinvoice_master', 'scpinvoice_master')->name('scpinvoice.master')->middleware('admin_waracc_check');
+    Route::post('/scpinvoice_master', 'scpinvoice_master_filter')->name('scpinvoice.master')->middleware('admin_waracc_check');
+
+    Route::get('/scpinvoice_edit/{id}', 'scpinvoice_edit')->name('scpinvoice.edit')->middleware('admin_warehouse_check');
+    Route::post('/scpinvoice_update', 'scpinvoice_update')->name('scpinvoice.update')->middleware('admin_warehouse_check');
+    Route::delete('/scpinvoice_delete/{scpinvoice_no}', 'scpinvoice_delete')->name('scpinvoice.delete')->middleware('admin_warehouse_check');
+
+    Route::get('/generate_scp_invoice_pdf/{scpinvoice_no}', 'generate_scp_invoice_pdf')->name('generate.scpinvoice.pdf')->middleware('admin_waracc_check');
+
+    Route::post('/scpinvoice_order', 'scpinvoice_order')->name('scpinvoice.order')->middleware('admin_warehouse_check');
+    Route::get('/scp_invoice_json_download/{scpinvoice_no}', 'scp_invoice_json_download')->name('scp.invoice.json.download')->middleware('admin_warehouse_check');
+
+});
+
+///////////////////////////////// Warehouse To Warehouse Billing //////////////////////////////////////////////////////
+
+Route::controller(WarehouseinvoiceController::class)->group(function () {
+    Route::get('/warehouse-invoice', 'index')->name('warehouse.invoice')->middleware('admin_warehouse_check');
+    Route::get('/warehouseinvoice-edit/{disinvoice_no}', 'warehouseinvoice_edit')->name('warehouseinvoice.edit')->middleware('admin_warehouse_check');
+    Route::post('/warehouseinvoice-update', 'warehouseinvoice_update')->name('warehouseinvoice.update')->middleware('admin_warehouse_check');
+    Route::post('/towarehosue-details', 'towarehouse_details')->name('towarehouse.details')->middleware('admin_warehouse_check');
+    Route::post('/warehouseinvoice-remove', 'warehouseinvoice_remove')->name('warehouseinvoice.remove')->middleware('admin_warehouse_check');
+    Route::post('/warehouseinvoice_store', 'warehouseinvoice_store')->name('warehouseinvoice.store')->middleware('admin_warehouse_check');
+    Route::delete('/warehouseinvoice_delete/{id}', 'warehouseinvoice_delete')->name('warehouseinvoice.delete')->middleware('admin_warehouse_check');
+    Route::post('/warehouseinvoice_csv_store', 'warehouseinvoice_csv_store')->name('warehouseinvoice.csv.store')->middleware('admin_warehouse_check');
+    Route::post('/warehouseinvoice_csv_update', 'warehouseinvoice_csv_update')->name('warehouseinvoice.csv.update')->middleware('admin_warehouse_check');
+    Route::get('/warehouse-invoice-pdf/{disinvoice_no}', 'warehouse_invoice_pdf')->middleware('admin_warehouse_check');
+    Route::get('/delivery-note', 'delivery_note')->name('delivery.note')->middleware('admin_warehouse_check');
+    Route::post('/warehouseinvoice_approve{disinvoice_no}', 'warehouseinvoice_approve')->name('warehouseinvoice.approve')->middleware('admin_warehouse_check');
+    Route::post('/warehouse-invoiceno', 'invoiceno')->name('warehouse.invoiceno');
+
+});
+
+Route::controller(DistributorinvoiceController::class)->group(function () {
+    Route::get('/distributorinvoice', 'index')->name('distributorinvoice')->middleware('admin_distributor_check');
+    Route::post('/product_select_sub', 'product_select_sub')->name('product_select_sub');
+
+    Route::get('/distributorinvoice_print/{partnerinvoice_no}', 'distributorinvoice_print')->name('distributorinvoice.print')->middleware('admin_distributor_check');
+
+    Route::post('/distributorinvoice_remove', 'distributorinvoice_remove')->name('distributorinvoice.remove');
+    Route::post('/distributorinvoice_store', 'distributorinvoice_store')->name('distributorinvoice.store');
+    Route::post('/distributorinvoice_csv_store_update', 'distributorinvoice_csv_store_update')->name('distributorinvoice.csv.store.update');
+
+
+    Route::get('/distributorinvoice_master', 'distributorinvoice_master')->name('distributorinvoice.master')->middleware('admin_distributor_check');
+    Route::post('/distributorinvoice_master', 'distributorinvoice_master_filter')->name('distributorinvoice.master')->middleware('admin_distributor_check');
+
+    Route::get('/distributorinvoice_edit/{id}', 'distributorinvoice_edit')->name('distributorinvoice.edit')->middleware('admin_distributor_check');
+    Route::post('/distributorinvoice_update', 'distributorinvoice_update')->name('distributorinvoice.update');
+    Route::delete('/distributorinvoice_delete/{id}', 'distributorinvoice_delete')->name('distributorinvoice.delete');
+    Route::get('/invoice_pdf/{partnerinvoice_no}', 'distributorinvoice_stream')->middleware('admin_distributor_check');
+
+    Route::post('/distributorinvoice_order', 'distributorinvoice_order')->name('distributorinvoice.order');
+});
+
+Route::controller(BajajController::class)->group(function () {
+    Route::get('/add_bajaj', 'index')->name('add_bajaj')->middleware('admin_check');
+    Route::get('/bajaj', 'add_bajaj')->name('bajaj')->middleware('admin_check');
+    Route::post('/bajaj_new_store', 'bajaj_new_store')->name('bajaj.new.store')->middleware('admin_check');
+    Route::get('/bajaj_master', 'bajaj_master')->name('bajaj.master')->middleware('admin_check');
+    Route::post('/bajaj_store', 'bajaj_store')->name('bajaj.store')->middleware('admin_check');
+    Route::get('/bajaj_delete/{id}', 'bajaj_delete')->name('bajaj.delete')->middleware('admin_check');
+    Route::get('/bajaj_export', 'bajaj_export')->name('bajaj.export')->middleware('admin_check');
+});
+
+
+Route::get('export-csv', function () {
+    return Excel::download(new PriceExport(), 'price.csv');
+});
+
+////////////////////////////////////////Employee////////////////////////////////////
+
+Route::controller(EmployeeController::class)->group(function () {
+    Route::get('/add_employee', 'index')->name('add.employee')->middleware('admin_hr_check');
+    Route::get('/employee_master', 'employee_master')->name('employee.master')->middleware('admin_hr_check');
+    Route::post('/employee_store', 'employee_store')->name('employee.store');
+    Route::get('/employee_edit/{id}', 'employee_edit')->name('employee.edit')->middleware('admin_hr_check');
+    Route::get('/employee_print/{id}', 'employee_print')->name('employee.print')->middleware('admin_hr_check');
+
+    Route::post('/employee_update/{id}', 'employee_update')->name('employee.update');
+    Route::delete('/employee_delete/{id}', 'employee_delete')->name('employee.delete');
+});
+
+
+
+//////////////////////////////////////////// Service Calls Enquiry //////////////////////////////////////
+
+Route::controller(EnquiryController::class)->group(function () {
+    Route::get('/add_enquiry', 'index')->name('add.enquiry');
+    Route::get('/add_enquiry_app', 'add_enquiry_app')->name('add.enquiry.app');
+    Route::get('/enquiry_master', 'enquiry_master')->name('enquiry.master')->middleware('admin_serviceadmin_check');
+    Route::get('/enquiry_master_return', 'enquiry_master_return')->name('enquiry.master.return')->middleware('admin_factory_acc_check');
+
+    Route::post('/enquiry_master_return', 'enquiry_master_return_filter')->name('enquiry.master.return')->middleware('admin_factory_acc_check');
+
+    Route::get('/customer_support', 'customer_support')->name('customer.support')->middleware('admin_serviceadmin_check');
+    Route::post('/customer_support', 'ratings')->name('ratings')->middleware('admin_serviceadmin_check');
+    Route::get('/customer_support_export', 'customer_support_export')->name('customer.support.export')->middleware('admin_serviceadmin_check');
+
+    Route::post('/eq_model_select', 'eq_model_select')->name('eq.model.select');
+
+    Route::post('/enquiry_store', 'enquiry_store')->name('enquiry.store');
+    Route::get('/enquiry_edit/{id}', 'enquiry_edit')->name('enquiry.edit');
+    Route::post('/enquiry_update/{id}', 'enquiry_update')->name('enquiry.update');
+    Route::delete('/enquiry_delete/{id}', 'enquiry_delete')->name('enquiry.delete');
+    Route::get('/enquiry_manage', 'enquiry_manage')->name('enquiry.manage')->middleware('admin_servicecenter_check');
+    Route::get('/enquiry_manage_admin/{service_id}', 'enquiry_manage_admin')->name('enquiry.manage.admin')->middleware('admin_serviceadmin_check');
+
+    Route::post('/enquiry_manage_admin/{service_id}', 'enquiry_manage_admin_filter')->name('enquiry.manage.admin')->middleware('admin_serviceadmin_check');
+
+    Route::get('/enquiry_manage_search/{search}', 'enquiry_manage_search')->name('enquiry.manage.search');
+    Route::post('/enquiry_product_code', 'enquiry_product_code')->name('enquiry.product.code');
+
+    Route::post('/serial_details', 'serial_details')->name('serial.details');
+
+    Route::get('/warranty_check/{serial_no}/{current_date}', 'warranty_check')->name('warranty.check');
+
+    Route::post('/w_serial_check', 'w_serial_check')->name('w.serial.check');
+
+    Route::post('/enquiry_assign', 'enquiry_assign')->name('enquiry.assign');
+    Route::post('/enquiry_assign_admin', 'enquiry_assign_admin')->name('enquiry.assign.admin');
+
+    Route::get('/enquiry_admin/{id}', 'enquiry_admin')->name('enquiry.admin');
+    Route::post('/part', 'part')->name('part');
+    Route::post('/enquiry_cancel/{id}', 'enquiry_cancel')->name('enquiry.cancel');
+    Route::post('/enquiry_allocate/{id}', 'enquiry_allocate')->name('enquiry.allocate');
+
+    Route::post('/enquiry_transfer_request/{id}', 'enquiry_transfer_request')->name('enquiry.transfer.request');
+    Route::post('/enquiry_transfer/{id}', 'enquiry_transfer')->name('enquiry.transfer');
+    Route::post('/enquiry_check_admin', 'enquiry_check_admin')->name('enquiry.check.admin');
+    Route::get('/enquiry_dashboard', 'enquiry_dashboard')->name('enquiry.dashboard')->middleware('admin_servicecenter_check');
+    Route::post('/enquiry_dashboard', 'enquiry_dashboard_filter')->name('enquiry.dashboard')->middleware('admin_servicecenter_check');
+
+    Route::post('/enquiry_search', 'enquiry_search')->name('enquiry.search');
+    Route::get('/enquiry_reports', 'enquiry_reports')->name('enquiry.reports')->middleware('admin_servicecenter_check');
+
+    Route::post('/enquiry_part_processed/{id}', 'enquiry_part_processed')->name('enquiry.part.processed');
+    Route::post('/enquiry_part_order/{id}', 'enquiry_part_order')->name('enquiry.part.order');
+    Route::get('/partorder_master', 'partorder_master')->name('partorder.master')->middleware('admin_factory_check');
+
+    Route::post('/partorder_master', 'partorder_master_filter')->name('partorder.master')->middleware('admin_factory_check');
+
+    Route::post('/enquiry_part_success/{id}', 'enquiry_part_success')->name('enquiry.part.success');
+
+    Route::get('/enquiry_dc/{id}', 'enquiry_dc')->name('enquiry.dc');
+
+    Route::get('/enquiry_rma/{id}', 'enquiry_rma')->name('enquiry.rma');
+
+    Route::delete('/partorder_delete/{id}', 'partorder_delete')->name('partorder.delete');
+    Route::get('/partorder_invoice/{id}', 'partorder_invoice')->name('partorder.invoice');
+    Route::get('/partorder_invoice_master', 'partorder_invoice_master')->name('partorder.invoice.master')->middleware('admin_factory_check');
+
+    Route::post('/partorder_invoice_master', 'partorder_invoice_master_filter')->name('partorder.invoice.master')->middleware('admin_factory_check');
+
+    Route::get('/add_partorder_invoice/{id}', 'add_partorder_invoice')->name('add.partorder.invoice')->middleware('admin_factory_check');
+    Route::post('/partorder_invoice_store/{id}', 'partorder_invoice_store')->name('partorder.invoice.store');
+    Route::post('/partorder_invoice_update/{id}', 'partorder_invoice_update')->name('partorder.invoice.update');
+
+    Route::post('/part_code_select', 'part_code_select')->name('part.code.select');
+    Route::delete('/partorder_invoice_delete/{invoice_no}', 'partorder_invoice_delete')->name('partorder.invoice.delete');
+    Route::get('/partorder_invoice_edit/{invoice_no}', 'partorder_invoice_edit')->name('partorder.invoice.edit');
+    Route::delete('/partorder_single_invoice_delete/{id}', 'partorder_single_invoice_delete')->name('partorder.single.invoice.delete');
+    Route::get('/partorder_invoice_print/{invoice_no}', 'partorder_invoice_print')->name('partorder.invoice.print')->middleware('admin_factory_check');
+    Route::get('/partorder_invoice_stream_pdf/{invoice_no}', 'partorder_invoice_stream_pdf')->name('partorder.invoice.stream.pdf')->middleware('admin_factory_check');
+});
+
+/////////////////////////////////////////////// Marketing Controller //////////////////////////////////
+
+Route::controller(MarketingController::class)->group(function () {
+    Route::get('/add_marketing', 'index')->name('add.marketing')->middleware('admin_check');
+    Route::get('/marketing_master', 'marketing_master')->name('marketing.master')->middleware('admin_check');
+    Route::post('/marketing_store', 'marketing_store')->name('marketing.store')->middleware('admin_check');
+    Route::get('/marketing_edit/{id}', 'marketing_edit')->name('marketing.edit')->middleware('admin_check');
+    Route::post('/marketing_update/{id}', 'marketing_update')->name('marketing.update')->middleware('admin_check');
+    Route::delete('/marketing_delete/{id}', 'marketing_delete')->name('marketing.delete')->middleware('admin_check');
+});
+
+
+/////////////////////////////////////////////// Order Contoller //////////////////////////////////
+
+Route::controller(OrderController::class)->group(function () {
+    Route::get('/order', 'order_master')->name('order')->middleware('admin_warpartner_check');
+    Route::post('/order', 'order_master_filter')->name('order')->middleware('admin_warpartner_check');
+
+    Route::get('/sp_order', 'sp_order_master')->name('sp.order');
+    Route::post('/sp_order', 'sp_order_master_filter')->name('sp.order');
+    Route::get('/sp_order/{call_id}', 'sp_single_order')->name('sp.single.order');
+
+
+    Route::get('/order_details/{order_id}', 'single_order')->name('single.order');
+
+    Route::get('/my_order', 'my_order_master')->name('my.order')->middleware('admin_partner_check');
+    Route::post('/my_order', 'my_order_master_filter')->name('my.order')->middleware('admin_partner_check');
+    
+    Route::get('/my_order_details/{order_id}', 'my_single_order')->name('my.single.order');
+
+    Route::delete('/order_delete/{id}', 'order_delete')->name('order.delete');
+    Route::delete('/sp_order_delete/{id}', 'sp_order_delete')->name('sp.order.delete');
+});
+
+/////////////////////////////////////////////// Customer Invoice //////////////////////////////////
+
+Route::controller(DeainvoiceController::class)->group(function () {
+    Route::get('/deainvoice', 'index')->name('deainvoice')->middleware('admin_dirsub_check');
+    Route::post('/dea_model_details', 'dea_model_details')->name('dea.model.details');
+    Route::post('/deainvoice_store', 'deainvoice_store')->name('deainvoice.store');
+    Route::get('/deainvoice_master', 'deainvoice_master')->name('deainvoice.master')->middleware('admin_dirsub_check');
+    Route::get('/deainvoice_master', 'deainvoice_master')->name('deainvoice.master')->middleware('admin_dirsub_check');
+
+    Route::post('/deainvoice_master', 'deainvoice_master_filter')->name('deainvoice.master')->middleware('admin_dirsub_check');
+
+    Route::get('/deainvoice_edit/{id}', 'deainvoice_edit')->name('deainvoice.edit')->middleware('admin_dirsub_check');
+    Route::post('/deainvoice_update', 'deainvoice_update')->name('deainvoice.update');
+    Route::post('/deainvoice_remove', 'deainvoice_remove')->name('deainvoice.remove');
+    Route::get('/deainvoice_print/{customerinvoice_no}', 'deainvoice_print')->name('deainvoice.print')->middleware('admin_dirsub_check');
+    Route::delete('/deainvoice_delete/{id}', 'deainvoice_delete')->name('deainvoice.delete');
+
+    Route::get('/customer_invoice/{customerinvoice_no}', 'deainvoice_stream')->name('deainvoice.print.pdf')->middleware('admin_dirsub_check');
+
+    Route::get('/deainvoice_login_app/{phone}', 'deainvoice_login_app')->name('deainvoice.login.app');
+});
+
+//////////////////////////////////////////////////// Sale Return ////////////////////////////////////////
+
+Route::controller(SalereturnController::class)->group(function () {
+    Route::get('/direct_salereturn', 'direct_salereturn')->name('direct.salereturn')->middleware('admin_disdea_check');
+    Route::get('/direct_salereturn_master', 'direct_salereturn_master')->name('direct.salereturn.master')->middleware('admin_disdea_check');
+    Route::post('/direct_salereturn_master', 'direct_salereturn_master_filter')->name('direct.salereturn.master');
+    Route::post('/dis_select_invoice', 'dis_select_invoice')->name('dis.select.invoice');
+    Route::post('/disinvoice_no_select', 'disinvoice_no_select')->name('disinvoice_no.select');
+    Route::post('/disinvoice_no_model_select', 'disinvoice_no_model_select')->name('disinvoice_no.model.select');
+    Route::post('/direct_product_select', 'direct_product_select')->name('direct.product.select');
+    Route::post('/return_disinvoice_store', 'return_disinvoice_store')->name('return.disinvoice.store');
+    Route::get('/direct_salereturn_master', 'direct_salereturn_master')->name('direct.salereturn.master')->middleware('admin_disdea_check');
+    Route::post('/direct_salereturn_status', 'direct_salereturn_status')->name('direct.salereturn.status');
+
+    Route::post('/dir_inid', 'dir_inid')->name('dir.inid');
+
+
+    Route::get('/direct_salereturn_edit/{id}', 'direct_salereturn_edit')->name('direct.salereturn.edit')->middleware('admin_disdea_check');
+    Route::post('/direct_salereturn_update', 'direct_salereturn_update')->name('direct.salereturn.update');
+    Route::delete('/direct_salereturn_delete/{id}', 'direct_salereturn_delete')->name('direct.salereturn.delete');
+    Route::get('/direct_salereturn_print/{salereturn_no}', 'direct_salereturn_print')->name('direct.salereturn.print')->middleware('admin_disdea_check');
+    Route::post('/direct_salereturn_remove', 'direct_salereturn_remove')->name('direct.salereturn.remove');
+    Route::get('/direct_salereturn_stream_pdf/{salereturn_no}', 'direct_salereturn_stream_pdf')->name('direct.salereturn.stream.pdf')->middleware('admin_disdea_check');
+});
+
+//////////////////////////////////////////////////// Sale Return Sub Dealer ////////////////////////////////////////
+
+Route::controller(DealersalereturnController::class)->group(function () {
+    Route::get('/dealer_salereturn', 'dealer_salereturn')->name('dealer.salereturn')->middleware('admin_dissub_check');
+    Route::get('/dealer_salereturn_master', 'dealer_salereturn_master')->name('dealer.salereturn.master')->middleware('admin_dissub_check');
+    Route::post('/distributor_select_invoice', 'distributor_select_invoice')->name('distributor.select.invoice');
+    Route::post('/partnerinvoice_no_select', 'partnerinvoice_no_select')->name('partnerinvoice_no.select');
+    Route::post('/partnerinvoice_no_model_select', 'partnerinvoice_no_model_select')->name('partnerinvoice_no.model.select');
+    Route::post('/dealer_product_select', 'dealer_product_select')->name('dealer.product.select');
+    Route::post('/return_partnerinvoice_store', 'return_partnerinvoice_store')->name('return.partnerinvoice.store');
+    Route::get('/dealer_salereturn_master', 'dealer_salereturn_master')->name('dealer.salereturn.master')->middleware('admin_dissub_check');
+    Route::post('/sub_inid', 'sub_inid')->name('sub.inid');
+
+    Route::post('/dealer_salereturn_master', 'dealer_salereturn_master_filter')->name('dealer.salereturn.master');
+
+    Route::post('/dealer_address_select', 'dealer_address_select')->name('dealer.address.select');
+    Route::post('/dealer_salereturn_status', 'dealer_salereturn_status')->name('dealer.salereturn.status');
+
+    Route::get('/dealer_salereturn_edit/{id}', 'dealer_salereturn_edit')->name('dealer.salereturn.edit')->middleware('admin_dissub_check');
+    Route::post('/dealer_salereturn_update', 'dealer_salereturn_update')->name('dealer.salereturn.update');
+    Route::delete('/dealer_salereturn_delete/{id}', 'dealer_salereturn_delete')->name('dealer.salereturn.delete');
+    Route::get('/dealer_salereturn_print/{salereturn_no}', 'dealer_salereturn_print')->name('dealer.salereturn.print')->middleware('admin_dissub_check');
+    Route::post('/dealer_salereturn_remove', 'dealer_salereturn_remove')->name('dealer.salereturn.remove');
+    Route::get('/dealer_salereturn_stream_pdf/{salereturn_no}', 'dealer_salereturn_stream_pdf')->name('dealer.salereturn.stream.pdf')->middleware('admin_dissub_check');
+});
+
+////////////////////////////////////////////////////////amount collect///////////////////////////////////////////
+Route::controller(ApiamountcollectController::class)->group(function () {
+    Route::get('/add-collection-amount', 'add_collection_amount')->name('add.collection.amount')->middleware('admin_disacc_check');
+
+    Route::post('/store_collection_amount', 'store_collection_amount')->name('store.collection.amount')->middleware('admin_disacc_check');
+
+    Route::get('/direct-partner-collection-list', 'direct_partner_collection_list')->name('direct.partner.collection.list')->middleware('admin_disacc_check');
+
+    Route::get('/amount_collect_group_master', 'amount_collect_group_master')->name('amount.collect.group.master')->middleware('admin_disacc_check');
+
+    Route::post('/amount_collect_group_master', 'amount_collect_group_master_filter')->name('amount.collect.group.master')->middleware('admin_disacc_check');
+
+    Route::get('/my_amount_collect_group_master', 'my_amount_collect_group_master')->name('my.amount.collect.group.master')->middleware('admin_partner_check');
+
+    Route::post('/my_amount_collect_group_master', 'my_amount_collect_group_master_filter')->name('my.amount.collect.group.master')->middleware('admin_partner_check');
+
+    Route::get('/amount_collect_master/{partner_id}', 'amount_collect_master')->name('amount.collect.master');
+    Route::get('/my_amount_collect_master/{partner_id}', 'my_amount_collect_master')->name('my.amount.collect.master');
+    Route::post('/amount_collect_update_web/{id}', 'amount_collect_update_web')->name('amount.collect.update.web');
+
+    Route::post('/amount_collect_cancel/{id}', 'amount_collect_cancel')->name('amount.collect.cancel');
+
+Route::post('/partner_invoice_no', 'partner_invoice_no')->name('partner.invoice.no');
+
+});
+
+
+
+
+//javahar Area For Spareparts
+
+Route::controller(SparepartsController::class)->group(function () {
+    //CATEGORY MASATER
+    Route::get('/add_spareparts_category', 'add_spareparts_category')->name('add.spareparts.category')->middleware('admin_factory_check');
+    Route::get('/view_spareparts_category', 'manage_spareparts_category')->name('view.spareparts.category')->middleware('admin_factory_acc_check');
+    Route::post('/store_spareparts_category', 'store_spareparts_category')->name('store.spareparts.category');
+
+    Route::post('/update_spareparts_category', 'update_spareparts_category')->name('update.spareparts.category');
+    Route::get('/dalete_spareparts_category/{id}/{table}', 'delete_spareparts_category')->name('delete.spareparts.category');
+
+
+    //PARTS MASATER
+    Route::get('/add_spareparts', 'add_spareparts')->name('add.spareparts')->middleware('admin_factory_check');
+    Route::get('/spareparts_edit/{id}', 'spareparts_edit')->name('spareparts.edit')->middleware('admin_factory_check');
+
+    Route::get('/view_spareparts', 'manage_spareparts')->name('view.spareparts')->middleware('admin_factory_acc_check');
+
+    Route::post('/view_spareparts', 'manage_spareparts_filter')->name('view.spareparts')->middleware('admin_factory_acc_check');
+
+    Route::post('/store_spareparts', 'store_spareparts')->name('store.spareparts');
+
+    Route::post('/update_spareparts', 'update_spareparts')->name('update.spareparts.spareparts');
+
+    Route::post('/check_category', 'check_category')->name('check_category.spareparts');
+
+    Route::get('/dalete_spareparts_category/{id}/{table}', 'delete_spareparts_category')->name('delete.spareparts.category');
+
+
+
+    Route::get('/add_part_code', 'add_part_code')->name('add.part.code')->middleware('admin_factory_check');
+
+    Route::get('/part_code_edit/{id}', 'part_code_edit')->name('part.code.edit')->middleware('admin_factory_check');
+
+
+    Route::post('/store_part_code', 'store_part_code')->name('store.part.code');
+
+    Route::post('/update_partcodes', 'update_partcodes')->name('update.part.codes');
+
+    Route::post('/part_code_details', 'part_code_details')->name('part.code.details');
+
+
+
+    Route::get('/part_code_master', 'part_code_master')->name('part.code.master')->middleware('admin_factory_acc_check');
+
+    Route::get('/part_code_delete/{id}', 'part_code_delete')->name('part.code.delete');
+
+
+    Route::get('/exportpartcode', 'exportpartcode')->name('exportpartcode');
+});
+
+Route::controller(WarrantyLogics::class)->group(function () {
+    //CATEGORY MASATER
+    Route::get('/add_warranty_logics', 'add_warranty_logics')->name('add.warranty.logics')->middleware('admin_serviceadmin_check');
+    Route::get('/manage_warranty_logics', 'manage_warranty_logics')->name('manage.warranty.logics')->middleware('admin_serviceadmin_check');
+    Route::get('/edit_warranty_logics/{id}', 'edit_warranty_logics')->name('edit.warranty.logics')->middleware('admin_serviceadmin_check');
+
+    Route::post('/manage_warranty_logics', 'manage_warranty_logics_filter')->name('manage.warranty.logics')->middleware('admin_serviceadmin_check');
+
+    Route::post('/update_warranty_logics', 'update_warranty_logics')->name('update.warranty.logics')->middleware('admin_serviceadmin_check');
+
+    Route::get('/dalete_warrantylogics/{id}/{table}', 'dalete_warrantylogics')->name('dalete.warrantylogics')->middleware('admin_serviceadmin_check');
+    Route::post('/store_warranty_logics', 'store_warranty_logics')->name('store.warranty.logics')->middleware('admin_serviceadmin_check');
+
+    Route::get('/add_bulk', 'add_bulk')->name('add.bulk')->middleware('admin_serviceadmin_check');
+
+    Route::get('/add_warranty_list', 'add_warranty_list')->name('add.warranty.list');
+    Route::post('/store_warranty_list', 'store_warranty_list')->name('store.warranty.list')->middleware('admin_serviceadmin_check');
+
+    Route::post('/update_warranty', 'update_warranty')->name('update.warranty');
+    Route::get('/view_warraanty', 'View_warranty_bulk')->name('view.warraanty');
+    Route::post('/view_warraanty', 'View_warranty_bulk_filter')->name('view.warraanty');
+    Route::post('/warranty_popup', 'warranty_popup')->name('warranty.popup');
+
+    Route::get('/warranty-export', 'warrantyexport')->name('warranty.export');
+
+    Route::post('/warranty_select', 'warranty_select')->name('warranty.select');
+});
+
+
+Route::post('/upload-warranty', function () {
+    Excel::import(new User(), request()->file('file'));
+    return redirect()->back()->with('success', 'Data Imported Successfully');
+});
+
+
+////////////////////////////////////attendance//////////////////////////////////////
+
+Route::controller(AttendanceController::class)->group(function () {
+    Route::get('/autopunch', 'autopunch')->name('autopunch');
+    Route::get('/attendance_day_report', 'attendance_day_report')->name('attendance.day.report')->middleware('admin_hr_check');
+    Route::post('/attendance_day_report', 'attendance_day_filter')->name('attendance.day.report')->middleware('admin_hr_check');
+    Route::post('/attendance_update', 'attendance_update')->name('attendance.update');
+
+    Route::post('/attendance_select', 'attendance_select')->name('attendance.select');
+
+    Route::get('/attendance_month_report', 'attendance_month_report')->name('attendance.month.report')->middleware('admin_hr_check');
+    Route::post('/attendance_month_report', 'attendance_month_filter')->name('attendance.month.report')->middleware('admin_hr_check');
+});
+
+///////////////////////////////////////////////// state code ////////////////////////////////
+
+Route::controller(StateCodeController::class)->middleware('admin_check')->group(function () {
+        Route::get('/statecode', 'index')->name('statecode');
+        Route::post('/statecode', 'state_code_store')->name('statecode.store');
+        Route::get('/statecode_master', 'state_code_master')->name('statecode.master');
+        Route::get('/statecode_delete/{id}', 'state_code_delete');
+        Route::get('/statecode_edit/{id}', 'state_code_edit');
+        Route::post('/statecode_update', 'state_code_update')->name('statecode.update');
+    }
+);
+
+//////////////////////////////////////////////All excel export /////////////////////////////
+
+Route::controller(ExportController::class)->group(function () {
+    Route::get('/service-calls-export', 'service_calls')->name('service.calls.export');
+    Route::get('/service-center-calls-export', 'service_center_calls')->name('service.center.calls.export');
+});
+
+

@@ -1,0 +1,3 @@
+bill_no,authorised_person,receiver,receiver_phone_no,item_code,item_type_spg_or_fag,item_qty,bill_note
+LB-AB-2324-1,test1,test 2,9876543210,REA003,SPG,1,test transfer
+LB-AB-2324-1,test1,test 2,9876543210,NPB002,SPG,3,test transfer
